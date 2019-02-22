@@ -1,0 +1,146 @@
+#define _XTAL_FREQ 4000000
+#include <xc.h>
+#pragma config WDTE = OFF
+#include <stdint.h>
+#include <string.h>
+#include<stdio.h>
+
+void part1() {
+    TRISC = 0xFE; //Make RC0 an output everything else input
+    while (1) {
+        LATC = 0x01; //Make RC0 output
+        __delay_ms(50);
+        LATC = 0x00; //Make RC0 input
+        __delay_ms(50);
+    }
+}
+
+void part2() {
+    TRISC0 = 0; //Make RC6 an output everything else input
+    while (1) {
+        LATC0 = 0; //Make RC6 output
+        LATC0 = 1; //Make RC6 input
+    }
+}
+
+void part3() {
+    TRISC = 0x00; // make all pins on port C outputs
+    while (1) {
+        LATC++;
+        __delay_ms(100);
+    }
+}
+
+void part4() {
+    TRISC = 0xDF; //Make RC5 an output everything else input
+    while (1) {
+        LATC = 0x20; //Make RC5 output
+        __delay_ms(50);
+        LATC = 0x00; //Make RC5 input
+        __delay_ms(50);
+    }
+}
+
+void printStringToPort(char* string) {
+    uint8_t len = strlen(string) + 1; // send the null character, too
+    uint8_t i;
+    for (i = 0; i < len; i++) {
+        LATC = string[i]; // write the character's ASCII code to the GPIO port
+        LATC7 = 1; // pulse RC7 high
+        LATC7 = 0; // ... and low again
+    }
+}
+
+void part5() {
+    TRISC = 0x00; // make all pins on port C outputs
+
+    char myString[] = "Hello, world!";
+    printStringToPort(myString);
+}
+
+void part6() {
+    WPUB6 = 1;
+    TRISB = 0x40; //Make RB6 an input
+    ANSB6 = 0; //Make RB6 schimitt trigger = 0
+    TRISC = 0xFE; //Make RC0 output
+    while (1) {
+        RC0 = RB6;
+    }
+}
+
+void part7() {
+    WPUB6 = 1;
+    TRISB = 0x40; //Make RB6 an input
+    ANSB6 = 0; //Make RB6 schimitt trigger = 0
+    TRISC = 0xFE; //Make RC0 output
+    int pushCount = 0;
+    while (1) {
+        RC0 = RB6;
+        while (RB6 == 0);
+        pushCount++;
+        __delay_ms(10);
+        while (RB6 == 1);
+    }
+}
+
+void part8() {
+    TRISC = 0xFF;
+    TRISB = 0x00;
+    WPUC = 0xFF;
+    ANSELC = 0;
+    while (1) {
+        int i = 0;
+        if (PORTC == 0xFF) {
+            LATB = 0;
+        }
+        for (i = 0; i <= 7; i++) {
+            if (!((PORTC << i) & (0x80))) {
+                LATB = ((7 - i) << 4) | 0x80;
+                break;
+            }
+        }
+    }
+}
+
+void BarGraph_init() {
+    TRISC = 0x00;
+    LATC = 0x00;
+}
+
+void BarGraph_writeValue(uint8_t val) {
+    uint8_t newVal = 0;
+
+    for (uint8_t i = 0; i < (val); i++) {
+        newVal |= (0x01 << i);
+    }
+    LATC = newVal;
+}
+
+void ADC_init() {
+    ADCLK = 1;
+    ADCON0bits.CS = 1;
+    ADCON0bits.FM = 1;
+    ADPCH = 0b001111;
+    TRISBbits.TRISB7 = 1;
+    ANSELBbits.ANSB7 = 1;
+    ADCON0bits.ON = 1;
+}
+
+uint16_t ADC_getValue() {
+    ADCON0bits.GO = 1;
+    while (ADCON0bits.GO);
+    uint16_t result = (ADRESH << 8) | ADRESL;
+    return result;
+}
+
+void main(void) {
+  ADC_init();
+  BarGraph_init();
+  while (1) {
+      int16_t val2 = (ADC_getValue()-480) ;
+      if (val2 < 0) {
+          val2 = 0;
+      }
+      BarGraph_writeValue(val2/15);
+  }
+}
