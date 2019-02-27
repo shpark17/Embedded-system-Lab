@@ -144,3 +144,74 @@ void main(void) {
       BarGraph_writeValue(val2/15);
   }
 }
+
+void LED_init() {
+    T2CLKCON = 0x01; //configure Timer 2's clock source to Fosc/4
+    T2CONbits.ON = 1; // turn on Timer2
+
+    // red @ CCP1 on C7
+    CCP1CONbits.CCP1EN = 1;
+    CCP1CONbits.MODE = 0b1100;
+    RC7PPS = 0x09;
+    TRISC7 = 0;
+
+    //Green @ CCP2 on C6
+    CCP2CONbits.CCP2EN = 1;
+    CCP2CONbits.MODE = 0b1100;
+    RC6PPS = 0x0A;
+    TRISC6 = 0;
+
+    //Blue @ CCP3 on C3
+    CCP3CONbits.CCP3EN = 1;
+    CCP3CONbits.MODE = 0b1100;
+    RC3PPS = 0x0B;
+    TRISC3 = 0;
+    
+    //White @ CCP4 on C4
+    CCP4CONbits.CCP4EN = 1;
+    CCP4CONbits.MODE = 0b1100;
+    RC4PPS = 0x0C;
+    TRISC4 = 0;
+
+    CCPR1H = 0x00;
+    CCPR2H = 0x00;
+    CCPR3H = 0x00;
+    CCPR4H = 0x00;
+}
+
+void LED_setBrightness(uint16_t val) {
+    CCPR1H = val >> 8;
+    CCPR1L = val & 0xFF;
+
+}
+
+void LED_setColor(uint8_t Red, uint8_t Green, uint8_t Blue, uint8_t White) {
+
+    CCPR1L = Red >> 1;
+    CCPR2L = Green >> 1;
+    CCPR3L = Blue >> 1;
+    CCPR4L = White >> 1;
+}
+
+void colors() {
+    while(1) {
+        LED_setColor(255,0,0,0); //Red
+        __delay_ms(100);
+        LED_setColor(0,255,0,0); //Green
+        __delay_ms(100);
+        LED_setColor(0,0,255,0); // Blue
+        __delay_ms(100);
+        LED_setColor(0,0,0,255); //White
+        __delay_ms(100);
+    }
+}
+
+void main() {
+    uint16_t val;
+    LED_init();
+    ADC_init();
+    colors();
+//    while (1) {
+//        LED_setColor(255, 255, 255, 255);
+//    }
+}
