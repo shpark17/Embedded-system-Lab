@@ -212,10 +212,24 @@ void colors() {
     hsl.L = 0.5;
     hsl.S = 1.0;
     while (1) {
-      
-        hsl.H++;
-      
-        hsl.H = (hsl.H + 1) % 360;
+        // pulse white LED
+        for(int i = 0; i<10;i++)
+        {
+                LED_setColor(255,255,255,255); //White on
+                __delay_ms(5);
+                LED_setColor(0,0,0,0); //White off
+                __delay_ms(100);    
+        }
+
+                LED_setColor(255,0,0,0); // Red
+                __delay_ms(100);
+                LED_setColor(0,255,0,0); // Green
+                __delay_ms(100);                
+                LED_setColor(0,0,255,0); // Blue
+                __delay_ms(100);
+        for(int i = 0;i<360;i++)
+        {
+        hsl.H = i;
         rgb_t rgb = HSLToRGB(hsl);
 
         LED_setColor(rgb.R, rgb.G, rgb.B, 0);
@@ -224,9 +238,10 @@ void colors() {
             __delay_ms(1000);
         
         __delay_ms(10);
+        }
+
     }
 }
-
 
 void main() {
     uint16_t val;
