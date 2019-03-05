@@ -1,0 +1,125 @@
+#define _XTAL_FREQ 4000000
+#include <xc.h>
+#pragma config WDTE = OFF
+#include <stdint.h>
+#include <string.h>
+#include<stdio.h>
+
+void shift(uint8_t val) {
+    for (uint8_t i = 0; i < 8; i++) {
+        if ((val >> i) & 0x01) {
+            RB4 = 1;
+        } else {
+            RB4 = 0;
+        }
+        RB6 = 1;
+        RB6 = 0;
+    }
+    RB5 = 1;
+    RB5 = 0;
+}
+
+void part1() {
+    TRISB = 0b0000;
+    uint8_t i = 0;
+    while (1) {
+        shift(i++);
+        __delay_ms(100);
+    }
+}
+
+void initialization() {
+    TRISB = 0b0000;
+    SSP1CON1bits.SSPEN = 1;
+    SSP1STATbits.CKE = 1;
+    RB4PPS = 0x14; //Data out
+    RB6PPS = 0x13; //Clock pin
+}
+
+void part2() {
+    initialization();
+    SSP1BUF = 0x0F;
+    while (SSP1STATbits.BF == 0);
+    RB5 = 1;
+    RB5 = 0;
+}
+
+char SPIbuffer;
+
+void LedArray_setPin(uint8_t pinNumber, uint8_t pinValue) {
+    if (pinValue) {
+        SPIbuffer |= (1 << pinNumber);
+    } else {
+        SPIbuffer &= ~(1 << pinNumber);
+    }
+}
+
+void LedArray_flush() {
+    SSP1BUF = SPIbuffer;
+    while (SSP1STATbits.BF == 0);
+    RB5 = 1;
+    RB5 = 0;
+}
+
+void part3() {
+    initialization();
+    while(1){
+    for (int i = 0; i < 8; i++) {
+        LedArray_setPin(i, 1); // set all pins
+        LedArray_flush();
+        __delay_ms(100);
+    }
+        for (int i = 0; i < 8; i++) {
+        LedArray_setPin(i, 0); // set all pins
+        LedArray_flush();
+        __delay_ms(100);
+    }
+    // flush the new value to the shift register
+    }
+}
+
+void BarGraph_init() {
+    LATC6 = 1;
+    LATB7 =0;
+}
+
+void LEDarray_clear() {
+    SPIbuffer = 0;
+}
+
+void BarGraph_writeValue(uint8_t val) {
+    LEDarray_clear();
+
+    for (uint8_t i = 0; i < (val); i++) {
+        LedArray_setPin(i,1);
+    }
+    LedArray_flush();
+}
+
+void ADC_init() {
+    ADCLK = 1;
+    ADCON0bits.CS = 1;
+    ADCON0bits.FM = 1;
+    ADPCH = 0b010111;
+    
+    TRISCbits.TRISC7 = 1;
+    ANSELCbits.ANSC7 = 1;
+    
+    ADCON0bits.ON = 1;
+}
+
+uint16_t ADC_getValue() {
+    ADCON0bits.GO = 1;
+    while (ADCON0bits.GO);
+    uint16_t result = (ADRESH << 8) | ADRESL;
+    return result;
+}
+
+void main(void) {
+  ADC_init();
+  initialization();
+  
+  while (1) {
+   BarGraph_writeValue(ADC_getValue()/511);
+  }
+}
