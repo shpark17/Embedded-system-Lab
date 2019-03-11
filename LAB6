@@ -123,3 +123,25 @@ void main(void) {
    BarGraph_writeValue(ADC_getValue()/511);
   }
 }
+
+//for more LED
+uint16_t SPIbuffer;
+void LedArray_flush() {
+    SSP1BUF = SPIbuffer >> 8;
+    while (SSP1STATbits.BF == 0);
+    //RB5 = 1;
+    //RB5 = 0;
+    
+    SSP1BUF = SPIbuffer & 0xFF;
+    while (SSP1STATbits.BF == 0);
+    RB5 = 1;
+    RB5 = 0;
+}
+void main(void) {
+  ADC_init();
+  initialization();
+  
+  while (1) {
+   BarGraph_writeValue(ADC_getValue()/255);   //change to 255
+  }
+}
