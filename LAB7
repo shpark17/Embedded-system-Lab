@@ -1,0 +1,84 @@
+#define USART_BAUDRATE 9600
+#define BAUD_PRESCALE (((F_CPU / (USART_BAUDRATE * 16UL))) - 1)
+
+void UART_init() {
+    BRGH = 1;
+    SP1BRG = 25;
+    RC7PPS = 0x0F;
+    SPEN = 1;
+    TXEN = 1;
+}
+
+void UART_sendChar(char buffer) {
+    TX1REG = buffer;
+    while (TRMT == 0);
+}
+
+void part1() {
+    UART_init();
+    while (1) {
+        UART_sendChar('H');
+        UART_sendChar('e');
+        UART_sendChar('y');
+        __delay_ms(1);
+    }
+}
+
+void putch(char buffer) {
+    TX1REG = buffer;
+    while (TRMT == 0);
+}
+
+void part2() {
+    UART_init();
+    while (1) {
+        printf("HEY");
+    }
+}
+
+void part3() {
+    UART_init();
+    uint8_t i = 0;
+    while (1) {
+        printf("%u\r\n", i++);
+    }
+}
+int counter = 0;
+
+void __interrupt() pinCopyISR() {
+    int state = RB6;
+    __delay_ms(1);
+    int lastState = RB5;
+    if (state != lastState) {
+        counter++;
+    } else {
+        counter--;
+    }
+
+    // clear the interrupt flag
+    IOCBFbits.IOCBF5 = 0;
+}
+
+void main(void) {
+    UART_init();
+
+    TRISC7 = 0;
+    TRISB4 = 0;
+    // Button input
+    TRISB = 0b01100000;
+    ANSB5 = 0;
+    ANSB6 = 0;
+
+    IOCBNbits.IOCBN5 = 1; // IOC, RC0 rising
+
+
+    INTCONbits.GIE = 1; // enable global interrupts
+    PIE0bits.IOCIE = 1; // enable IOC interrupts
+    int oldCount = 0;
+    while (1) {
+        if (oldCount != counter) {
+            oldCount = counter;
+            printf("%d\r\n", counter);
+        }
+    }
+}
