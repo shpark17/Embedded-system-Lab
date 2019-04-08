@@ -1,0 +1,56 @@
+#include "mcc_generated_files/mcc.h"
+
+/*
+                         Main application
+ */
+char buffer [512];
+int i = 0;
+
+void LED_setColor(uint8_t Red, uint8_t Green, uint8_t Blue, uint8_t White) {
+    CCPR1L = Red >> 1;
+    CCPR2L = Green >> 1;
+    CCPR3L = Blue >> 1;
+    CCPR4L = White >> 1;
+}
+
+void DMXISR() {
+    char temp = RC1REG;
+    if (RC1STAbits.FERR) {
+        i = 0;
+    } else {
+        buffer[i++] = temp;
+    }
+    if (RC1STAbits.OERR) {
+        RC1STAbits.CREN = 0;
+        RC1STAbits.CREN = 1;
+    }
+}
+
+void main(void) {
+    // initialize the device
+    SYSTEM_Initialize();
+
+    EUSART1_SetRxInterruptHandler(DMXISR);
+    
+    // When using interrupts, you need to set the Global and Peripheral Interrupt Enable bits
+    // Use the following macros to:
+
+    // Enable the Global Interrupts
+    INTERRUPT_GlobalInterruptEnable();
+
+    // Enable the Peripheral Interrupts
+    INTERRUPT_PeripheralInterruptEnable();
+
+    // Disable the Global Interrupts
+    //INTERRUPT_GlobalInterruptDisable();
+
+    // Disable the Peripheral Interrupts
+    //INTERRUPT_PeripheralInterruptDisable();
+
+    while (1) {
+        LED_setColor(buffer[16], buffer[17], buffer[18], buffer[19]);
+    }
+}
+/**
+ End of File
+ */
