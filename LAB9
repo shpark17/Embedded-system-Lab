@@ -1,0 +1,48 @@
+#include "mcc_generated_files/mcc.h"
+
+uint8_t isRunning = 1;
+
+void pinIsr() {
+    __delay_ms(5);
+    if (RC7)
+        return; // ignore bouncy button releases
+
+    if (isRunning) {
+        TMR0_StopTimer();
+        isRunning = 0;
+
+    } else {
+        TMR0_StartTimer();
+        isRunning = 1;
+    }
+}
+
+/*
+                         Main application
+ */
+void main(void) {
+    // initialize the device
+    SYSTEM_Initialize();
+    IOCCF7_SetInterruptHandler(pinIsr);
+
+    // When using interrupts, you need to set the Global and Peripheral Interrupt Enable bits
+    // Use the following macros to:
+
+    // Enable the Global Interrupts
+    INTERRUPT_GlobalInterruptEnable();
+
+    // Enable the Peripheral Interrupts
+    INTERRUPT_PeripheralInterruptEnable();
+
+    // Disable the Global Interrupts
+    //INTERRUPT_GlobalInterruptDisable();
+
+    // Disable the Peripheral Interrupts
+    //INTERRUPT_PeripheralInterruptDisable();
+
+    while (1) {
+        if (!isRunning) {
+            SLEEP();
+        }
+    }
+}
